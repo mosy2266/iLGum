@@ -2,44 +2,33 @@ package KTB3.yun.Joongul.posts;
 
 import KTB3.yun.Joongul.common.auth.JwtTokenProvider;
 import KTB3.yun.Joongul.common.dto.JwtToken;
-import KTB3.yun.Joongul.global.utils.DatabaseCleanup;
+import KTB3.yun.Joongul.global.support.IntegrationTestSupport;
 import KTB3.yun.Joongul.members.domain.Member;
 import KTB3.yun.Joongul.members.repository.MemberRepository;
 import KTB3.yun.Joongul.posts.domain.Post;
 import KTB3.yun.Joongul.posts.dto.PostUpdateRequestDto;
 import KTB3.yun.Joongul.posts.dto.PostWriteRequestDto;
 import KTB3.yun.Joongul.posts.repository.PostRepository;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class PostIntegrationTest {
+public class PostIntegrationTest extends IntegrationTestSupport {
 
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private DatabaseCleanup databaseCleanup;
     @Autowired
     private PostRepository postRepository;
     @Autowired
@@ -49,20 +38,10 @@ public class PostIntegrationTest {
     @Autowired
     private MemberRepository memberRepository;
 
-    @BeforeEach
-    public void setUp() {
-        RestAssured.port = port;
-    }
-
-    @AfterEach
-    public void tearDown() {
-        databaseCleanup.execute();
-    }
-
     @Test
     @DisplayName("로그인하지 않은 사용자는 게시글 목록 조회 시 401 오류가 발생한다")
     void 비로그인_사용자_게시글_목록_조회_시_401 () {
-        given().log().all()
+        spec
                 .when()
                 .get("/posts")
                 .then().log().all()
@@ -78,7 +57,7 @@ public class PostIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         Post post2 = savePost("제목2", "내용2", member);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .get("/posts")
@@ -97,7 +76,7 @@ public class PostIntegrationTest {
         Member member = saveMember("test@test.com", "Test111!", "테스터");
         Post post1 = savePost("제목1", "내용1", member);
 
-        given().log().all()
+        spec
                 .when()
                 .get("/posts/{id}", post1.getPostId())
                 .then().log().all()
@@ -111,7 +90,7 @@ public class PostIntegrationTest {
         String accessToken = getAccessToken(member);
         Post post1 = savePost("제목1", "내용1", member);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .get("/posts/{id}", post1.getPostId())
@@ -129,7 +108,7 @@ public class PostIntegrationTest {
         Member member = saveMember("test@test.com", "Test111!", "테스터");
         String accessToken = getAccessToken(member);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .get("/posts/{id}", 1L)
@@ -155,7 +134,7 @@ public class PostIntegrationTest {
 
         postRepository.save(deletedPost);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .get("/posts/{id}", deletedPost.getPostId())
@@ -168,7 +147,7 @@ public class PostIntegrationTest {
     void 비로그인_사용자_게시글_작성_시_401() {
         PostWriteRequestDto postReq = new PostWriteRequestDto("제목", "내용", null);
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .body(postReq)
                 .when()
@@ -185,7 +164,7 @@ public class PostIntegrationTest {
         PostWriteRequestDto postReq = new PostWriteRequestDto("제목", "내용", null);
 
 
-        Long postId = given().log().all()
+        Long postId = spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(postReq)
@@ -212,7 +191,7 @@ public class PostIntegrationTest {
         String accessToken = getAccessToken(member);
         PostWriteRequestDto postReq = new PostWriteRequestDto("제목", "", null);
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(postReq)
@@ -229,7 +208,7 @@ public class PostIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         PostUpdateRequestDto updateReq = new PostUpdateRequestDto("제목1", "수정", null);
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .body(updateReq)
                 .when()
@@ -246,7 +225,7 @@ public class PostIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         PostUpdateRequestDto updateReq = new PostUpdateRequestDto("제목 수정", "내용 수정", "이미지 수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -276,7 +255,7 @@ public class PostIntegrationTest {
         Member anotherMember = saveMember("another@test.com", "Test111!", "다른테스터");
         String accessToken = getAccessToken(anotherMember);
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -293,7 +272,7 @@ public class PostIntegrationTest {
         String accessToken = getAccessToken(member);
         PostUpdateRequestDto updateReq = new PostUpdateRequestDto("제목 수정", "내용 수정", "이미지 수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -323,7 +302,7 @@ public class PostIntegrationTest {
 
         PostUpdateRequestDto updateReq = new PostUpdateRequestDto("제목 수정", "내용 수정", "이미지 수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -341,7 +320,7 @@ public class PostIntegrationTest {
         String accessToken = getAccessToken(member);
         PostUpdateRequestDto updateReq = new PostUpdateRequestDto("제목 수정", "", "이미지 수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -357,7 +336,7 @@ public class PostIntegrationTest {
         Member member = saveMember("test@test.com", "Test111!", "테스터");
         Post post1 = savePost("제목1", "내용1", member);
 
-        given().log().all()
+        spec
                 .when()
                 .delete("/posts/{id}", post1.getPostId())
                 .then().log().all()
@@ -371,7 +350,7 @@ public class PostIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         String accessToken = getAccessToken(member);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .delete("/posts/{id}", post1.getPostId())
@@ -391,7 +370,7 @@ public class PostIntegrationTest {
         Member anotherMember = saveMember("another@test.com", "Test111!", "다른테스터");
         String accessToken = getAccessToken(anotherMember);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .delete("/posts/{id}", post1.getPostId())
@@ -405,7 +384,7 @@ public class PostIntegrationTest {
         Member member = saveMember("test@test.com", "Test111!", "테스터");
         String accessToken = getAccessToken(member);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .delete("/posts/{id}", 1L)
@@ -443,6 +422,7 @@ public class PostIntegrationTest {
                 .views(0)
                 .createdAt(LocalDateTime.now())
                 .isDeleted(false)
+                .commentsList(new ArrayList<>())
                 .member(member).build();
         return postRepository.save(post);
     }

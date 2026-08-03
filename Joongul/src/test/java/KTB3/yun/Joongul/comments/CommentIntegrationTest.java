@@ -6,42 +6,31 @@ import KTB3.yun.Joongul.comments.dto.CommentWriteRequestDto;
 import KTB3.yun.Joongul.comments.repository.CommentRepository;
 import KTB3.yun.Joongul.common.auth.JwtTokenProvider;
 import KTB3.yun.Joongul.common.dto.JwtToken;
-import KTB3.yun.Joongul.global.utils.DatabaseCleanup;
+import KTB3.yun.Joongul.global.support.IntegrationTestSupport;
 import KTB3.yun.Joongul.members.domain.Member;
 import KTB3.yun.Joongul.members.repository.MemberRepository;
 import KTB3.yun.Joongul.posts.domain.Post;
 import KTB3.yun.Joongul.posts.repository.PostRepository;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CommentIntegrationTest {
+public class CommentIntegrationTest extends IntegrationTestSupport {
 
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private DatabaseCleanup databaseCleanup;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
     @Autowired
@@ -53,15 +42,6 @@ public class CommentIntegrationTest {
     @Autowired
     private CommentRepository commentRepository;
 
-    @BeforeEach
-    public void setUp() {
-        RestAssured.port = port;
-    }
-
-    @AfterEach
-    public void tearDown() {
-        databaseCleanup.execute();
-    }
 
     @Test
     @DisplayName("로그인하지 않은 사용자는 댓글 작성 시 401 오류가 발생한다")
@@ -71,7 +51,7 @@ public class CommentIntegrationTest {
 
         CommentWriteRequestDto commentReq = new CommentWriteRequestDto("댓글");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .body(commentReq)
                 .when()
@@ -89,7 +69,7 @@ public class CommentIntegrationTest {
 
         CommentWriteRequestDto commentReq = new CommentWriteRequestDto("댓글");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(commentReq)
@@ -109,7 +89,7 @@ public class CommentIntegrationTest {
 
         CommentWriteRequestDto commentReq = new CommentWriteRequestDto("댓글");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(commentReq)
@@ -128,7 +108,7 @@ public class CommentIntegrationTest {
 
         CommentWriteRequestDto commentReq = new CommentWriteRequestDto("");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(commentReq)
@@ -147,7 +127,7 @@ public class CommentIntegrationTest {
 
         CommentUpdateRequestDto updateReq = new CommentUpdateRequestDto("수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .body(updateReq)
                 .when()
@@ -166,7 +146,7 @@ public class CommentIntegrationTest {
 
         CommentUpdateRequestDto updateReq = new CommentUpdateRequestDto("수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -194,7 +174,7 @@ public class CommentIntegrationTest {
 
         CommentUpdateRequestDto updateReq = new CommentUpdateRequestDto("수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -213,7 +193,7 @@ public class CommentIntegrationTest {
 
         CommentUpdateRequestDto updateReq = new CommentUpdateRequestDto("수정");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -233,7 +213,7 @@ public class CommentIntegrationTest {
 
         CommentUpdateRequestDto updateReq = new CommentUpdateRequestDto("");
 
-        given().log().all()
+        spec
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + accessToken)
                 .body(updateReq)
@@ -250,7 +230,7 @@ public class CommentIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         Comment comment = saveComment(post1, member, "내용");
 
-        given().log().all()
+        spec
                 .when()
                 .delete("/posts/{postId}/comments/{commentId}", post1.getPostId(), comment.getCommentId())
                 .then().log().all()
@@ -265,7 +245,7 @@ public class CommentIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         Comment comment = saveComment(post1, member, "내용");
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .delete("/posts/{postId}/comments/{commentId}", post1.getPostId(), comment.getCommentId())
@@ -285,7 +265,7 @@ public class CommentIntegrationTest {
         Post post1 = savePost("제목1", "내용1", member);
         Comment comment = saveComment(post1, member, "내용");
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .delete("/posts/{postId}/comments/{commentId}", post1.getPostId(), comment.getCommentId())
@@ -300,7 +280,7 @@ public class CommentIntegrationTest {
         String accessToken = getAccessToken(member);
         Post post1 = savePost("제목1", "내용1", member);
 
-        given().log().all()
+        spec
                 .header("Authorization", "Bearer " + accessToken)
                 .when()
                 .delete("/posts/{postId}/comments/{commentId}", post1.getPostId(), 1L)
@@ -338,6 +318,7 @@ public class CommentIntegrationTest {
                 .views(0)
                 .createdAt(LocalDateTime.now())
                 .isDeleted(false)
+                .commentsList(new ArrayList<>())
                 .member(member).build();
         return postRepository.save(post);
     }
